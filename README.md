@@ -8,19 +8,19 @@ https://cloud.google.com/bigtable/docs/overview
 
 *BigTable's unique backend architecture gives it many competitive advantages such as:*
 
-1. *Incredibly high scalability.*
-2. *No server management for you as a user, BigTable is fully managed by Google.*
-3. *Autoscaling.*
-4. *Global footprints, you can have big table clusters in one or more unique zones in a region or even in another zone in another region, all under a single BigTable instance,replication starts automatically without any extra configurations, making your data available across the geographies.*
-5. *Resize your clusters without any downtime.*
-6. *Simple administration, all updates, upgrades and restarts are hadnled seamlessly, ensuring data durability during such events.*
+- *Incredibly high scalability.*
+- *No server management for you as a user, BigTable is fully managed by Google.*
+- *Autoscaling.*
+- *Global footprints, you can have big table clusters in one or more unique zones in a region or even in another zone in another region, all under a single BigTable instance,replication starts automatically without any extra configurations, making your data available across the geographies.*
+- *Resize your clusters without any downtime.*
+- *Simple administration, all updates, upgrades and restarts are hadnled seamlessly, ensuring data durability during such events.*
 
 *BigTable makes a great choice for storing a variety of data:*
-1. *Time-series data*
-2. *Marketing data*
-3. *Financial data such as stock prices and currency exchange rates*
-4. *IoT*
-5. *Graph data, showing relationship between entities*
+- *Time-series data*
+- *Marketing data*
+- *Financial data such as stock prices and currency exchange rates*
+- *IoT*
+- *Graph data, showing relationship between entities*
 
 *In this tutorial we will use BigTable to implement a time-series database, where events from an external source arrive at regular intervals of time, are ingested into Cloud Pub/Sub and pushed to a Cloud Run API which then handles the events and persist the data into BigTable.*
 
