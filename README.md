@@ -1,7 +1,5 @@
 ### Ingest timeseries event data into Cloud BigTable with Google Cloud Pub/Sub and Google Cloud Run
 
-_###Background_
-
 *Google Cloud BigTable is Google's sparsely populated database which can scale to billions of rows and thousands of columns, enabling you to store terabytes or even petabytes of data at scale. BigTable is a "NoSQL", key-value store which is ideal for storing large amount of "single-key" data, supporting a high throughput at low read/wrire latencies. A BigTable has only one index, that is the row key which will be used to look up the data, there are plenty of guidelines on how you should choose your row keys and design your schema, but broadly speaking, consider your query patterns for the store data and that should be the first thing that should guide your row keys and schema. Please refer to Google's documentation for more insights into BigTable design considerations.*
 
 https://cloud.google.com/bigtable/docs/overview
