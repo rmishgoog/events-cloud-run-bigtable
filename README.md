@@ -33,14 +33,12 @@ https://cloud.google.com/bigtable/docs/overview
 *First, make sure that you have an active GCP project with a valid billing account, also ensure that you have right roles and permissions in order to provision the resources we will need for this tutorial. For the sake of simplicity, use an account with 'Project Owner' or 'Project Editor' role assigned to it, however, always keep in mind that convinience over security is never a good practice and I highly recommend that in your production environments, always use the principle of least privileges, assigning the identities exactly what they need, no more and no less.*
 
 *On your workstation, if you do not have the gcloud CLI installed, please go ahead and install it, if you do, you can move on to the next step.*
-
 ```
 gcloud auth login
 ```
 *Follow the web flow and authenticate yourself with the 'owner/editor' account that you are using, this command will obtain access credentials for your user account via a web-based authorization flow. When this command completes successfully, it sets the active account in the current configuration to the account specified.*
 
 *Next, execute the below command:*
-
 ```
 gcloud auth application-default login
 ```
@@ -51,6 +49,62 @@ gcloud auth application-default login
 *It's important to understand the differences, gcloud auth login will store the creds (credentials) at a known location which will be used by gcloud CLI, any code/SDK running locally will not pick up these creds, however as you would see down the line, we will be running some test clients which will make use of Google's client libraries and these libraries make use of ADC which iteratively look for creds to use when authenticating to Google Cloud APIs, the gcloud auth application-default login will update the creds at a location known to client libraries and allowing them to use the creds. Same holds good for tools like Terraform for example, they also rely on ADC rather gcloud and should you choose to run Terraform CLI locally with ADC supplied credentials, you must provide them, credentials update by gcloud auth application-defual login are picked in the last iteration. They do not overwrite what is written by gcloud auth login command.*
 
 *Find more details here https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login*
+
+*Clone the repo on your workstation:*
+```
+git clone https://github.com/rmishgoog/events-cloud-run-bigtable.git
+```
+*Change to teh application directory:*
+```
+cd events-cloud-run-bigtable/application
+```
+*Build the application image (you should have docker installed on your terminal or if you prefer to work with another tool such as podman, that will do as well, I have docker CLI and docker daemon running locally and thus using the same), take a look at the Dockerfile and how it makes use of multi-staged build to finally buld a minimalistic image with distroless at it's base and contaning just the go binary, a practice you shall follow when possible:*
+```
+docker build -t gcr.io/<YOUR_PROJECT_ID>/climate-updates:v0.1 .
+```
+*Now push this image to your Google Container Registry:*
+```
+docker push gcr.io/<YOUR_PROJECT_ID>/climate-updates:v0.1
+```
+*Create Cloud BigTable instance with a single cluster (we will use cbt as the CLI to interact with BigTable APIs, if you do not have it installed, you can easily do it via gcloud by following the next two instructions, before you create your instance):*
+```
+gcloud components update
+```
+```
+gcloud components install cbt
+```
+```
+cbt createinstance climate-updates "climate updates" climate-updates-c1 us-central1-a 1 SSD
+```
+*For convinience, let's update the local .cbt file where we can set the project id and instance as defaults to be used by future cbt commands:*
+```
+export \
+    INSTANCE_ID=climate-updates
+export \
+    GOOGLE_CLOUD_PROJECT=<YOUR_PROJECT_ID>
+echo project = \
+    $GOOGLE_CLOUD_PROJECT > ~/.cbtrc
+echo instance = $INSTANCE_ID >> \
+    ~/.cbtrc
+```
+*Create  the table:*
+```
+cbt createtable climate-updates "families=climate_summary:maxage=10d||maxversions=1,stats_detail:maxage=10d||maxversions=1"
+```
+*Our application will be deployed as a Cloud Run container and to be able to read/write from BigTable, we should use a 'purposed' service account and grant it the role it needs:*
+```
+gcloud iam service-accounts create climate-updates-api --display-name="Cloud Run API service account"
+```
+```
+gcloud projects add-iam-policy-binding rmishra-kubernetes-playground \
+    --member=serviceAccount:climate-updates-api@<YOUR_PROJECT_ID>.iam.gserviceaccount.com --role=roles/bigtable.user
+```
+*Now, go ahead and deploy the Cloud Run service:*
+```
+gcloud run deploy climate-updates-ingest-api --image=gcr.io/<YOUR_PROJECT_ID>/climate-updates:v0.1 --concurrency=20 --cpu=1 --ingress=internal --memory=256Mi --port=8080 \
+  --set-env-vars=PROJECT=<YOUR_PROJECT_ID>,INSTANCE=climate-updates,TABLE=climate-updates --no-allow-unauthenticated --execution-environment=gen1 --region=us-central1 \
+  --service-account=climate-updates-api@<YOUR_PROJECT_ID>.iam.gserviceaccount.com
+```
 
 
 
