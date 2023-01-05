@@ -20,6 +20,7 @@ var (
 	table    string
 )
 
+// Will be looked up for code to description conversion
 var pollution_codes_to_status = map[int]string{
 	100: "SEVERE",
 	101: "MODERATE",
