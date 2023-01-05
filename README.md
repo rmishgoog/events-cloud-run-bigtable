@@ -59,6 +59,8 @@ git clone https://github.com/rmishgoog/events-cloud-run-bigtable.git
 cd events-cloud-run-bigtable/application
 ```
 *Build the application image (you should have docker installed on your terminal or if you prefer to work with another tool such as podman, that will do as well, I have docker CLI and docker daemon running locally and thus using the same), take a look at the Dockerfile and how it makes use of multi-staged build to finally buld a minimalistic image with distroless at it's base and contaning just the go binary, a practice you shall follow when possible:*
+
+***Note: Make sure you replace YOUR_PROJECT_ID with the project id you are working within, alternatively you can set PROJECT_ID as an environment variable and use it, for example export PROJECT_ID=my-project and then replace <YOUR_PROJECT_ID> with $PROJECT_ID**.*
 ```
 docker build -t gcr.io/<YOUR_PROJECT_ID>/climate-updates:v0.1 .
 ```
