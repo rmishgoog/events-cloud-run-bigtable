@@ -17,7 +17,7 @@ type PayLoad struct {
 	Temperature    float64
 	AirPressure    float64
 	WeekOfYear     int
-	DayOfWeek      int
+	Year           int
 }
 
 func publishJsonData(projectID, topicID string) error {
@@ -26,12 +26,12 @@ func publishJsonData(projectID, topicID string) error {
 	data := PayLoad{
 		State:          "IL",
 		County:         "Will",
-		City:           "Joliet",
+		City:           "Bolingbrook",
 		PollutionIndex: 100,
-		Temperature:    39.6,
+		Temperature:    21.6,
 		AirPressure:    30,
-		WeekOfYear:     1,
-		DayOfWeek:      4,
+		WeekOfYear:     2,
+		Year:           2023,
 	}
 	if err != nil {
 		return fmt.Errorf("Error occurred when obtaining a new client:%v", err)
@@ -57,8 +57,8 @@ func main() {
 	//projectID := "<your-project-id"
 	//topicID := "<your-topic-id>"
 	//Please provide the project id and topic id above, uncomment the vars and you can then remove empty string declarations below
-	projectID := ""
-	topicID := ""
+	projectID := "rmishra-kubernetes-playground"
+	topicID := "us-climate-updates"
 	err := publishJsonData(projectID, topicID)
 	if err != nil {
 		fmt.Printf("Logging the error in main():%v", err)

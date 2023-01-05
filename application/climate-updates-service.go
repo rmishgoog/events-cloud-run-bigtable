@@ -47,7 +47,7 @@ type CurrentStatus struct {
 	Temperature    float64
 	AirPressure    float64
 	WeekOfYear     int
-	DayOfWeek      int
+	Year           int
 }
 
 func addLocation(writer http.ResponseWriter, request *http.Request) {
@@ -94,7 +94,7 @@ func write(project, instance string, tableName string, message PubSubMessage) er
 	temperature := currentStatus.Temperature
 	pressure := currentStatus.AirPressure
 	week := currentStatus.WeekOfYear
-	day := currentStatus.DayOfWeek
+	year := currentStatus.Year
 
 	if _, found := pollution_codes_to_status[pollutionCode]; found == false {
 		return fmt.Errorf("No valid pollution status description was found using the code %v", pollutionCode)
@@ -103,7 +103,7 @@ func write(project, instance string, tableName string, message PubSubMessage) er
 	mut.Set(columnFamilyName, "temperature", timestamp, []byte(fmt.Sprintf("%f", temperature)))
 	mut.Set(columnFamilyName, "pressure", timestamp, []byte(fmt.Sprintf("%f", pressure)))
 
-	rowKey := state + "#" + county + "#" + city + "#" + strconv.FormatInt(int64(week), 10) + "#" + strconv.FormatInt(int64(day), 10)
+	rowKey := state + "#" + county + "#" + city + "#" + strconv.FormatInt(int64(year), 10) + "#" + strconv.FormatInt(int64(week), 10)
 	if err := table.Apply(ctx, rowKey, mut); err != nil {
 		return fmt.Errorf("BigTable write operation has failed with an error: %v", err)
 	}
