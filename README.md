@@ -224,6 +224,12 @@ gcloud pubsub topics delete us-climate-updates
 ```
 gcloud run services delete climate-updates-ingest-api
 ```
+```
+gcloud iam service-accounts delete climate-updates-subscription@<YOUR_PROJECT_ID>.iam.gserviceaccount.com
+```
+```
+gcloud iam service-accounts delete climate-updates-api@<YOUR_PROJECT_ID>.iam.gserviceaccount.com
+```
 
 
 
