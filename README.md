@@ -48,6 +48,14 @@ gcloud auth application-default login
 
 *It's important to understand the differences, gcloud auth login will store the creds (credentials) at a known location which will be used by gcloud CLI, any code/SDK running locally will not pick up these creds, however as you would see down the line, we will be running some test clients which will make use of Google's client libraries and these libraries make use of ADC which iteratively look for creds to use when authenticating to Google Cloud APIs, the gcloud auth application-default login will update the creds at a location known to client libraries and allowing them to use the creds. Same holds good for tools like Terraform for example, they also rely on ADC rather gcloud and should you choose to run Terraform CLI locally with ADC supplied credentials, you must provide them, credentials update by gcloud auth application-defual login are picked in the last iteration. They do not overwrite what is written by gcloud auth login command.*
 
+*Enable the required services if not done already:*
+```
+gcloud services enable run.googleapis.com \
+  bigtable.googleapis.com \
+  pubsub.googleapis.com \
+  containerregistry.googleapis.com
+```
+
 *Find more details here https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login*
 
 *Clone the repo on your workstation:*
