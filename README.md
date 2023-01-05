@@ -107,7 +107,115 @@ gcloud run deploy climate-updates-ingest-api --image=gcr.io/<YOUR_PROJECT_ID>/cl
   --set-env-vars=PROJECT=<YOUR_PROJECT_ID>,INSTANCE=climate-updates,TABLE=climate-updates --no-allow-unauthenticated --execution-environment=gen1 --region=us-central1 \
   --service-account=climate-updates-api@<YOUR_PROJECT_ID>.iam.gserviceaccount.com
 ```
+*Note down the service endpoint, we will use that when creating a 'push' subscription to automatically invoke the Cloud Run service when an event arrives at the topic. It should look similar to what is given below:*
+```
+https://climate-updates-ingest-api-7ljpzipopq-uc.a.run.app/
+```
+*Now, we move on to create a topic and a 'push' subscription, but before that, let's create a service account which the subscripton can use to authenticate itself when invoking the Cloud Run service:*
+```
+gcloud iam service-accounts create climate-updates-subscription
+```
+*Grant this service account the run.invoker role on the Cloud Run service we created above:*
+```
+gcloud run services add-iam-policy-binding climate-updates-ingest-api  --member=serviceAccount:climate-updates-subscription@<YOUR_PROJECT_ID>.iam.gserviceaccount.com  --role=roles/run.invoker
+```
+*Create a pub/sub topic, this is where our "sensors" will post the climate condition updates:*
+```
+gcloud pubsub topics create us-climate-updates
+```
+*Finally, create the subscription, associate it with the topic and make sure you assign it the right service account (created above with run.invoker role), specify the type as 'push' and supply the Cloud Run service endpoint to post the message payload:*
+```
+gcloud pubsub subscriptions create us-climate-updates-subscription --topic us-climate-updates \
+   --ack-deadline=60 \
+   --push-endpoint=<YOUR_CLOUD_RUN_SERVICE_ENDPOINT> \
+   --push-auth-service-account=climate-updates-subscription@<YOUR_PROJECT_ID>.iam.gserviceaccount.com \
+   --min-retry-delay=60 \
+   --max-retry-delay=600
+ ```
+*That should be it! We have provisioned all the GCP resources we need, you can do a spot check in GCP console that everything looks alright and is in a healthy state.*
 
+*Next, we will test the set up with a simple standalone Go client.You will need Go installed on your workstation to test this set up, I will also update this section with a gcloud command to post complex messeges (like having JSON formatted payload instead of plain strings). If you have Go installed, change to the client directory:*
+```
+cd ../client
+```
+*Here, isnide the main method, be sure to supply the project id and topic id you are working with:*
+```
+func main() {
+	fmt.Printf("main(). Starting to publish the message")
+	//projectID := "<your-project-id"
+	//topicID := "<your-topic-id>"
+  ....
+  ....
+```
+*The sample payload is a Go struct which is marshalled into a Json, you can change the values as you like and run the code, just make sure that values do not violate the declared types:*
+```
+data := PayLoad{
+		State:          "IL",
+		County:         "Will",
+		City:           "Bolingbrook",
+		PollutionIndex: 100,
+		Temperature:    40.6,
+		AirPressure:    30,
+		WeekOfYear:     1,
+		Year:           2023,
+	}
+```
+*Run the Go client:*
+```
+go run .
+```
+*You should get a message like below when the client is finished running successfully:*
+```
+main(). Starting to publish the message{"State":"IL","County":"Will","City":"Bolingbrook","PollutionIndex":100,"Temperature":20.6,"AirPressure":30,"WeekOfYear":2,"Year":2023}
+Published the message successfully with the id: 6569652341950790
+Published the message successfully
+```
+*You can check the Cloud Run service logs additionally to make sure that there were no errors, let's now check if the entries made it to the Cloud BigTable, pay attention to the row keys, they are of the form State#County#City#Year#Week with '#' as the key delimiter, you can provide the values you use in the client code:*
+```
+cbt lookup climate-updates IL#Will#Bolingbrook#2023#2 columns=climate_summary:pollution,temperature,pressure
+```
+*And we have results:*
+```
+IL#Will#Bolingbrook#2023#2
+  climate_summary:pollution                @ 2023/01/05-12:25:18.462000
+    "SEVERE"
+  climate_summary:pressure                 @ 2023/01/05-12:25:18.462000
+    "30.000000"
+  climate_summary:temperature              @ 2023/01/05-12:25:18.462000
+```
+*Note the timestamp here! Each column will have timestamped cells in our case, as stated, the 'sensors' emit this every minute throughout the week before flipping over to the next week. You should also make sure to read Google Cloud documentation on designing BigTable keys and schema which will make you understand better as why my row keys are of this form, in general you shall try to keep more granular values towards the end and more commmon values towards the begining of your row keys, for example you can have another city in the same state and county emitting the 'sensor' data, having row key as State#County#City#Year#Week is a good choice here.*
+
+*Now, let's update the temperature reading and run the client another time, we can see how pollution, air pressure and temperatures are captured as timestamped data:*
+```
+IL#Will#Bolingbrook#2023#2
+  climate_summary:pollution                @ 2023/01/05-12:40:11.434000
+    "SEVERE"
+  climate_summary:pollution                @ 2023/01/05-12:25:18.462000
+    "SEVERE"
+  climate_summary:pressure                 @ 2023/01/05-12:40:11.434000
+    "30.000000"
+  climate_summary:pressure                 @ 2023/01/05-12:25:18.462000
+    "30.000000"
+  climate_summary:temperature              @ 2023/01/05-12:40:11.434000
+    "21.600000"
+  climate_summary:temperature              @ 2023/01/05-12:25:18.462000
+    "20.600000"
+ ```
+ *That's it! We just implemented a time-series "climate updates" ingestion system with "zero infrastructure" or "serverless" cloud native tech stack on Google Cloud, using Pub/Sub, Cloud Run and BigTable! How cool is that? Serverless takes the operational overheads away from your development teams so that they can focus on what they are measured against, that is to write quality applications while your provider like Google Cloud manages the underlying infrastructure for you.*
+ 
+*Cleaning up the resources is equally important after you are done with the tutorial, you can simply delete the project if it was created for this purpose alone but if not, use the below commands to clean up the resources:*
+```
+cbt deleteinstance climate-updates
+```
+```
+gcloud pubsub subscriptions delete us-climate-updates-subscription
+```
+```
+gcloud pubsub topics delete us-climate-updates
+```
+```
+gcloud run services delete climate-updates-ingest-api
+```
 
 
 
