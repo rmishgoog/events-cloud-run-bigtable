@@ -20,6 +20,7 @@ type PayLoad struct {
 	Year           int
 }
 
+// Change the payload for testing
 func publishJsonData(projectID, topicID string) error {
 	ctx := context.Background()
 	client, err := pubsub.NewClient(ctx, projectID)
@@ -54,11 +55,11 @@ func publishJsonData(projectID, topicID string) error {
 
 func main() {
 	fmt.Printf("main(). Starting to publish the message")
-	//projectID := "<your-project-id"
-	//topicID := "<your-topic-id>"
-	//Please provide the project id and topic id above, uncomment the vars and you can then remove empty string declarations below
-	projectID := "rmishra-kubernetes-playground"
+	projectID := "<your-project-id"
 	topicID := "us-climate-updates"
+	//Please provide the project id and topic id above, uncomment the vars and you can then remove empty string declarations below
+	//projectID := ""
+	//topicID := "us-climate-updates"
 	err := publishJsonData(projectID, topicID)
 	if err != nil {
 		fmt.Printf("Logging the error in main():%v", err)
